@@ -6,3 +6,6 @@ This lab incorporates the basics of user interrupt, CMSIS OS and GPIO configurat
 1. User button single tap.
 2. User button long press.
 3. A fixed-interval timer callback.
+
+### Lab 2: Wifi and Sensor data
+This lab focuses on the Wifi and the LSM6DSL modules. The accelerometer sensor values are continously transmitted to a host in the local network by TCP connection and then visualized at the host. In addition, the significant motion function is enabled in the LSM6DSL module. An interrupt is implemented to send a unique signal to the host when such events are detected.
