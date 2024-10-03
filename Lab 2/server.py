@@ -33,7 +33,6 @@ def Plot():
     return
 
 def handle(conn, addr):
-    # self.request is the TCP socket connected to the client
     data = bytes.decode(conn.recv(1024).strip())
     print("Received from {}:".format(addr))
     print(data)
