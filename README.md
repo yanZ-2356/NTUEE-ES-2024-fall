@@ -9,3 +9,6 @@ This lab incorporates the basics of user interrupt, CMSIS OS and GPIO configurat
 
 ### Lab 2: Wifi and Sensor data
 This lab focuses on the Wifi and the LSM6DSL modules. The accelerometer sensor values are continously transmitted to a host in the local network by TCP connection and then visualized at the host. In addition, the significant motion function is enabled in the LSM6DSL module. An interrupt is implemented to send a unique signal to the host when such events are detected.
+
+### Lab 3: BLE programming
+In this lab, a BLE central is established on a RPI to communicate with the BLE testing app on a phone. The server also supports setting the CCCD value on the client side.
