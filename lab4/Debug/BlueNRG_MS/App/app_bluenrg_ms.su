@@ -1,0 +1,4 @@
+../BlueNRG_MS/App/app_bluenrg_ms.c:92:6:MX_BlueNRG_MS_Init	56	static
+../BlueNRG_MS/App/app_bluenrg_ms.c:205:6:MX_BlueNRG_MS_Process	16	static
+../BlueNRG_MS/App/app_bluenrg_ms.c:217:13:User_Init	8	static
+../BlueNRG_MS/App/app_bluenrg_ms.c:232:13:User_Process	16	static
