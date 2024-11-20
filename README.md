@@ -12,3 +12,15 @@ This lab focuses on the Wifi and the LSM6DSL modules. The accelerometer sensor v
 
 ### Lab 3: BLE programming
 In this lab, a BLE central is established on a RPI to communicate with the BLE testing app on a phone. The server also supports setting the CCCD value on the client side.
+
+### Lab 4: BLE Programming
+This lab inherits parts of code in Lab 3 -- using RPi as a BLE client. Also, a STM32 is used as a BLE server. The RPi builds the connection and write a CCCD value of the server to assign a sampling frequency. Then, STM32 notifies RPi with the sensor values. Rpi then print the value on screen.
+
+The Python file is named as 'hw4-rpi-client.py' under the folder, and all the remaining files are for STM32.
+
+### Lab 5: PWM and Logic Analyzer
+In this lab, we use a built-in timer as a counter and PWM generator. The generated waveform is then passed to a logic analyzer via the Arduino connector on board.
+
+### Lab 6: Data Acquisition, DMA, and Interrupt
+- 6-1: Use a timer to generate interrupts. When an interrupt arrives, the ADC read the value of the on-board temperature sensor and prints out its value to computer via UART.
+- 6-2: Instead of using a timer, in this part, we use DMA instead. ADC automatically read values at a fixed rate, and DMA store the value to a designated address in the memory. When the array provided for DMA is full/half-full, DMA generates an interrupt to inform the other thread. The thread then prints the values stored in the array to computer via UART.
