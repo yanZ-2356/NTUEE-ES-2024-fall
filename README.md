@@ -24,3 +24,6 @@ In this lab, we use a built-in timer as a counter and PWM generator. The generat
 ### Lab 6: Data Acquisition, DMA, and Interrupt
 - 6-1: Use a timer to generate interrupts. When an interrupt arrives, the ADC read the value of the on-board temperature sensor and prints out its value to computer via UART.
 - 6-2: Instead of using a timer, in this part, we use DMA instead. ADC automatically read values at a fixed rate, and DMA store the value to a designated address in the memory. When the array provided for DMA is full/half-full, DMA generates an interrupt to inform the other thread. The thread then prints the values stored in the array to computer via UART.
+
+### Lab 7: CMSIS-DSP programming
+This lab aims to utilize the DSP functions provided by the arm math library. A 3Hz low-pass filter is applied to the z-axis data from the accelero to demostrate the usage of the fir function.
