@@ -53,6 +53,7 @@ SPI_HandleTypeDef hspi3;
 
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim5;
 
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart3;
@@ -67,7 +68,11 @@ int16_t error_prev = 0; //error(t-1)
 int16_t error_pp = 0;
 int16_t u_prev = 0; //u_n-1
 int PID_INIT = 0;
+
+//for actual speed
+float speed = 0;
 uint8_t motion_state = 0; // 0 if not moving, 1 if moving
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -84,6 +89,7 @@ static void MX_USB_OTG_FS_PCD_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_TIM5_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -135,10 +141,20 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
+  MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
   BSP_ACCELERO_Init(); //initialize the accelerometer's BSP.
+
+  //set the accelerometer to high-performance mode for low noise.
   uint8_t t = SENSOR_IO_Read(LSM6DSL_ACC_GYRO_I2C_ADDRESS_LOW, LSM6DSL_ACC_GYRO_CTRL6_C);
   SENSOR_IO_Write(LSM6DSL_ACC_GYRO_I2C_ADDRESS_LOW, LSM6DSL_ACC_GYRO_CTRL6_C, t ^ 0x10);
+  //set ODR to 6.66kHz (highest)
+  t = SENSOR_IO_Read(LSM6DSL_ACC_GYRO_I2C_ADDRESS_LOW, LSM6DSL_ACC_GYRO_CTRL1_XL);
+  SENSOR_IO_Write(LSM6DSL_ACC_GYRO_I2C_ADDRESS_LOW, LSM6DSL_ACC_GYRO_CTRL1_XL, 15*16+t%16);
+  //set LPF to BW=16Hz and low noise mode
+  t = SENSOR_IO_Read(LSM6DSL_ACC_GYRO_I2C_ADDRESS_LOW, LSM6DSL_ACC_GYRO_CTRL8_XL);
+  t = t & 0x11; //preserve bit4 and bit0
+  SENSOR_IO_Write(LSM6DSL_ACC_GYRO_I2C_ADDRESS_LOW, LSM6DSL_ACC_GYRO_CTRL8_XL, t+0xE8);
   printf("start\r\n");
 
   // Accelerometer test
@@ -561,7 +577,7 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 3999;
+  sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
@@ -576,6 +592,51 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
+
+}
+
+/**
+  * @brief TIM5 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM5_Init(void)
+{
+
+  /* USER CODE BEGIN TIM5_Init 0 */
+
+  /* USER CODE END TIM5_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM5_Init 1 */
+
+  /* USER CODE END TIM5_Init 1 */
+  htim5.Instance = TIM5;
+  htim5.Init.Prescaler = 4999;
+  htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim5.Init.Period = 999;
+  htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim5, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim5, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM5_Init 2 */
+
+  /* USER CODE END TIM5_Init 2 */
 
 }
 
@@ -706,7 +767,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOE, M24SR64_Y_RF_DISABLE_Pin|M24SR64_Y_GPO_Pin|ISM43362_RST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, ARD_D10_Pin|SPBTLE_RF_RST_Pin|ARD_D9_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, ARD_D10_Pin|GPIO_PIN_4|SPBTLE_RF_RST_Pin|ARD_D9_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, ARD_D8_Pin|ISM43362_BOOT0_Pin|ISM43362_WAKEUP_Pin|LED2_Pin
@@ -754,8 +815,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF8_UART4;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : ARD_D10_Pin SPBTLE_RF_RST_Pin ARD_D9_Pin */
-  GPIO_InitStruct.Pin = ARD_D10_Pin|SPBTLE_RF_RST_Pin|ARD_D9_Pin;
+  /*Configure GPIO pins : ARD_D10_Pin PA4 SPBTLE_RF_RST_Pin ARD_D9_Pin */
+  GPIO_InitStruct.Pin = ARD_D10_Pin|GPIO_PIN_4|SPBTLE_RF_RST_Pin|ARD_D9_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -851,44 +912,21 @@ static void MX_GPIO_Init(void)
 
 void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef *htim)
 {
-  float fpDataXYZ[3];
+  /* timer info*/
+  // TIM2: 4Hz for ADC
+  // TIM5: 8Hz for accelero
 
   if (htim->Instance == htim2.Instance) //if timer2 interrupt happens
   {
 	  HAL_ADC_Start_IT(&hadc1); //call ADC1 to start
 
-	  BSP_ACCELERO_AccGetXYZ_Float(fpDataXYZ);
-	  ////////////////////////////////////////////////////////////////////////
-	  /*void BSP_ACCELERO_AccGetXYZ_Float(float* fpDataXYZ);
-	   * is a function created by user in:
-	   * Drivers/BSP/B-L475E-IOT01/stm32l475e_iot01_accelero.c
-	   * and
-	   * Drivers/BSP/Components/lsm6dsl/lsm6dsl.c
-	   *
-	   * To use this function:
-	   * BSP_ACCELERO_SetReadMode(ACCELERO_READ_FLOAT);
-	   * must be called before this function
-	   *
-	   * call
-	   * BSP_ACCELERO_SetReadMode(ACCELERO_READ_INT);
-	   * before a normal BSP_ACCELERO_AccGetXYZ(int16_t*) is called.
-	   *
-	   * */
-//	  if(fpDataXYZ[1] > -20.f && fpDataXYZ[1] < 20.f) fpDataXYZ[1] = 0.f; // threshold
+  }else if(htim->Instance == htim5.Instance){ //if timer5 interrupt happens: calculate speed
 
-
-
-	  printf("acceleration: %f, %f, %f \r\n", fpDataXYZ[0], fpDataXYZ[1], fpDataXYZ[2]);
+	  AcceleroParser();
 
   }
 
 }
-
-
-/*
-void HAL_TIM_PWM_PulseFinishedCallback (TIM_HandleTypeDef * htim){
-	printf("PWM");
-}*/
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc){ //ADC conversion complete callback
 	LIGHT = HAL_ADC_GetValue(&hadc1);
@@ -925,6 +963,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc){ //ADC conversion complet
 
 	//set the CCR value to the timer
 	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, CCR);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, CCR);
 
 }
 
@@ -936,8 +975,9 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 			printf("turned off\r\n");
 			HAL_TIM_Base_Stop_IT(&htim2); //start timer
 			HAL_TIM_Base_Stop_IT(&htim3);
+			HAL_TIM_Base_Stop_IT(&htim5);
 			HAL_TIM_PWM_Stop_IT(&htim3, TIM_CHANNEL_1);
-			//HAL_TIM_PWM_Stop_IT(&htim3, TIM_CHANNEL_4);
+			HAL_TIM_PWM_Stop_IT(&htim3, TIM_CHANNEL_4);
 			// PWM param reset
 			LIGHT = 0;
 			CCR = 499;
@@ -946,13 +986,17 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 			u_prev = 0;
 			PID_INIT = 0;
 
+			// speed reset
+			speed = 0;
+
 			TIMER_IS_ON = 0;
 		}else{
 			printf("turned on\r\n");
 			HAL_TIM_Base_Start_IT(&htim2); //start timer
 			HAL_TIM_Base_Start_IT(&htim3);
+			HAL_TIM_Base_Start_IT(&htim5);
 			HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_1);
-			//HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_4);
+			HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_4);
 			TIMER_IS_ON = 1;
 		}
   }
@@ -963,6 +1007,99 @@ int __io_putchar(int ch)
 	//ITM_SendChar(ch);
     HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 0xFFFF);
     return (ch);
+}
+
+void AcceleroParser(){
+	//for accelerometer bias
+	static uint8_t acceleroTestCount = 0;
+	static float Xbias = 0;
+	static float Ybias = 0;
+	static float Zbias = 0;
+	static float XNewBias = 0;
+	static float YNewBias = 0;
+	static float ZNewBias = 0;
+	static uint8_t ClearSpeedCounter = 0;
+
+	float fpDataXYZ[3];
+
+	BSP_ACCELERO_AccGetXYZ_Float(fpDataXYZ);
+
+  //setting bias from the first 4 seconds
+  if(acceleroTestCount == 0){
+	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9); //LED3&4
+  }
+  if(acceleroTestCount < 32){
+	  acceleroTestCount++;
+	  Xbias += fpDataXYZ[0];
+	  Ybias += fpDataXYZ[1];
+	  Zbias += fpDataXYZ[2];
+  }else if(acceleroTestCount == 32){
+	  Xbias = Xbias/32.f;
+	  Ybias = Ybias/32.f;
+	  Zbias = Zbias/32.f;
+	  printf("bias set: %f, %f, %f \r\n", Xbias, Ybias, Zbias);
+	  acceleroTestCount++;
+	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
+  }else{
+	  //printf("acceleration: %f, %f, %f, speed: %f\r\n", fpDataXYZ[0]-Xbias, fpDataXYZ[1]-Ybias, fpDataXYZ[2]-Zbias, speed);
+	  if(fpDataXYZ[1]-Ybias > -5.f && fpDataXYZ[1]-Ybias < 5.f){
+		  if(speed > -10.f && speed < 10.f){ //below 0.15m/s and no acceleration for over 1s -> halts
+			  ClearSpeedCounter++;
+			  //Probable Re-calibration
+			  XNewBias += fpDataXYZ[0];
+			  YNewBias += fpDataXYZ[1];
+			  ZNewBias += fpDataXYZ[2];
+		  }
+		  if(ClearSpeedCounter == 8){
+			  ClearSpeedCounter = 0;
+			  Xbias = XNewBias / 8.f;
+			  Ybias = YNewBias / 8.f;
+			  Zbias = ZNewBias / 8.f;
+			  ClearSpeedCounter = 0;
+			  XNewBias = 0;
+			  YNewBias = 0;
+			  ZNewBias = 0;
+			  printf("bias set: %f, %f, %f \r\n", Xbias, Ybias, Zbias);
+			  speed = 0;
+		  }
+		  return;
+	  }else{
+		  if(ClearSpeedCounter != 0){
+			  ClearSpeedCounter = 0;
+			  XNewBias = 0;
+			  YNewBias = 0;
+			  ZNewBias = 0;
+		  }
+		  speed += (fpDataXYZ[1]-Ybias)/8.f;
+	  }
+
+	  if((speed > 10.f || speed < -10.f)){
+		  if(motion_state == 0){
+			  motion_state = 1;
+			  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
+		  }
+	  }else if(motion_state == 1){
+		  motion_state = 0;
+		  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
+	  }
+  }
+	  ////////////////////////////////////////////////////////////////////////
+	  /*void BSP_ACCELERO_AccGetXYZ_Float(float* fpDataXYZ);
+	   * is a function created by user in:
+	   * Drivers/BSP/B-L475E-IOT01/stm32l475e_iot01_accelero.c
+	   * and
+	   * Drivers/BSP/Components/lsm6dsl/lsm6dsl.c
+	   *
+	   * To use this function:
+	   * BSP_ACCELERO_SetReadMode(ACCELERO_READ_FLOAT);
+	   * must be called before this function
+	   *
+	   * call
+	   * BSP_ACCELERO_SetReadMode(ACCELERO_READ_INT);
+	   * before a normal BSP_ACCELERO_AccGetXYZ(int16_t*) is called.
+	   *
+	   * */
+  //	  if(fpDataXYZ[1] > -20.f && fpDataXYZ[1] < 20.f) fpDataXYZ[1] = 0.f; // threshold
 }
 /* USER CODE END 4 */
 
