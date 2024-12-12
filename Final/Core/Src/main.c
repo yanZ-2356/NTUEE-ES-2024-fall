@@ -61,6 +61,11 @@ UART_HandleTypeDef huart3;
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 /* USER CODE BEGIN PV */
+// LIGHT TARGET
+uint16_t MIN_LIGHT = 499;
+uint16_t TARGET_LIGHT = 2000;
+
+// Light Control
 int TIMER_IS_ON = 0;
 uint16_t LIGHT = 0;
 uint16_t CCR = 499;
@@ -69,7 +74,7 @@ int16_t error_pp = 0;
 int16_t u_prev = 0; //u_n-1
 int PID_INIT = 0;
 
-//for actual speed
+// for actual speed
 float speed = 0;
 uint8_t motion_state = 0; // 0 if not moving, 1 if moving
 
@@ -153,8 +158,10 @@ int main(void)
   SENSOR_IO_Write(LSM6DSL_ACC_GYRO_I2C_ADDRESS_LOW, LSM6DSL_ACC_GYRO_CTRL1_XL, 15*16+t%16);
   //set LPF to BW=16Hz and low noise mode
   t = SENSOR_IO_Read(LSM6DSL_ACC_GYRO_I2C_ADDRESS_LOW, LSM6DSL_ACC_GYRO_CTRL8_XL);
-  t = t & 0x11; //preserve bit4 and bit0
+  t = t & 0x11; //preserve bit4 and bit0, flush other to 0.
   SENSOR_IO_Write(LSM6DSL_ACC_GYRO_I2C_ADDRESS_LOW, LSM6DSL_ACC_GYRO_CTRL8_XL, t+0xE8);
+
+
   printf("start\r\n");
 
   // Accelerometer test
@@ -929,17 +936,28 @@ void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef *htim)
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc){ //ADC conversion complete callback
+	/* Global Variable
+	 * MIN_LIGHT: minimum light level for LED. Default=499
+	 * TARGET_LIGHT: target brightness. Default=2000
+	 * Can change this via BLE
+	 * */
 	LIGHT = HAL_ADC_GetValue(&hadc1);
 	printf("light level (0-4095) %d", LIGHT);
 	printf("\r\n");
-	if(LIGHT > 2500){
+	if(LIGHT > TARGET_LIGHT+500){
 		error_prev = 0; //stable. only minimum light needed
 		error_pp = 0;
-		CCR = 499;
+		CCR = MIN_LIGHT;
+	}else if(motion_state == 0){
+		//not moving
+		error_prev = 0; //not moving. only minimum light needed
+		error_pp = 0;
+		CCR = MIN_LIGHT;
 	}
+	//un-comment this to merge two tasks. (No RTOS)
 	else{
 
-		int16_t error = 2000 - LIGHT; //1300 is the target brightness
+		int16_t error = TARGET_LIGHT - LIGHT; //2000 is the target brightness
 
 		//PID filter
 		u_prev = u_prev + 1*error + 1.8*(error - error_prev) +0.2*(error - 2*error_prev + error_pp);
@@ -954,7 +972,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc){ //ADC conversion complet
 
 		CCR = 1 * u_prev; //CCR can be proportional to it.
 		//Clamp the value of CCR
-		if(CCR < 499) CCR = 499;
+		if(CCR < MIN_LIGHT) CCR = MIN_LIGHT;
 		else if(CCR > 7999) CCR = 7999;
 
 		printf("CCR = %d", CCR);
@@ -980,7 +998,7 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 			HAL_TIM_PWM_Stop_IT(&htim3, TIM_CHANNEL_4);
 			// PWM param reset
 			LIGHT = 0;
-			CCR = 499;
+			CCR = MIN_LIGHT;
 			error_prev = 0;
 			error_pp = 0;
 			u_prev = 0;
@@ -1026,7 +1044,7 @@ void AcceleroParser(){
 
   //setting bias from the first 4 seconds
   if(acceleroTestCount == 0){
-	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9); //LED3&4
+	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9); //LED3&4: initialization indicator
   }
   if(acceleroTestCount < 32){
 	  acceleroTestCount++;
@@ -1043,7 +1061,7 @@ void AcceleroParser(){
   }else{
 	  //printf("acceleration: %f, %f, %f, speed: %f\r\n", fpDataXYZ[0]-Xbias, fpDataXYZ[1]-Ybias, fpDataXYZ[2]-Zbias, speed);
 	  if(fpDataXYZ[1]-Ybias > -5.f && fpDataXYZ[1]-Ybias < 5.f){
-		  if(speed > -10.f && speed < 10.f){ //below 0.15m/s and no acceleration for over 1s -> halts
+		  if(speed > -10.f && speed < 10.f){ //below 0.10m/s and no acceleration for over 1s -> halts
 			  ClearSpeedCounter++;
 			  //Probable Re-calibration
 			  XNewBias += fpDataXYZ[0];
@@ -1076,7 +1094,7 @@ void AcceleroParser(){
 	  if((speed > 10.f || speed < -10.f)){
 		  if(motion_state == 0){
 			  motion_state = 1;
-			  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
+			  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);//motion indicator
 		  }
 	  }else if(motion_state == 1){
 		  motion_state = 0;
@@ -1099,7 +1117,7 @@ void AcceleroParser(){
 	   * before a normal BSP_ACCELERO_AccGetXYZ(int16_t*) is called.
 	   *
 	   * */
-  //	  if(fpDataXYZ[1] > -20.f && fpDataXYZ[1] < 20.f) fpDataXYZ[1] = 0.f; // threshold
+
 }
 /* USER CODE END 4 */
 
