@@ -9,6 +9,10 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
+-include Middlewares/ST/BlueNRG-MS/utils/subdir.mk
+-include Middlewares/ST/BlueNRG-MS/hci/hci_tl_patterns/Basic/subdir.mk
+-include Middlewares/ST/BlueNRG-MS/hci/controller/subdir.mk
+-include Middlewares/ST/BlueNRG-MS/hci/subdir.mk
 -include Drivers/STM32L4xx_HAL_Driver/Src/subdir.mk
 -include Drivers/BSP/Components/wm8994/subdir.mk
 -include Drivers/BSP/Components/stmpe811/subdir.mk
@@ -35,9 +39,12 @@ RM := rm -rf
 -include Drivers/BSP/Components/cy8c4014lqi/subdir.mk
 -include Drivers/BSP/Components/cs43l22/subdir.mk
 -include Drivers/BSP/Components/cs42l51/subdir.mk
+-include Drivers/BSP/B-L475E-IOT01A1/subdir.mk
 -include Drivers/BSP/B-L475E-IOT01/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
+-include BlueNRG_MS/Target/subdir.mk
+-include BlueNRG_MS/App/subdir.mk
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)
@@ -86,8 +93,8 @@ all: main-build
 main-build: Final.elf secondary-outputs
 
 # Tool invocations
-Final.elf Final.map: $(OBJS) $(USER_OBJS) C:\Users\a\Desktop\es\NTUEE-ES-2024-fall\Final\STM32L475VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "Final.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\a\Desktop\es\NTUEE-ES-2024-fall\Final\STM32L475VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Final.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -u _scanf_float -Wl,--start-group -lc -lm -Wl,--end-group
+Final.elf Final.map: $(OBJS) $(USER_OBJS) C:\Users\ASUS\STM32CubeIDE\workspace_1.16.0\Final\STM32L475VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "Final.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\ASUS\STM32CubeIDE\workspace_1.16.0\Final\STM32L475VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Final.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -u _scanf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

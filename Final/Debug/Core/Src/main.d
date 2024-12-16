@@ -39,11 +39,16 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_tim_ex.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart_ex.h \
+ ../BlueNRG_MS/Target/hci_tl_interface.h \
+ ../Drivers/BSP/B-L475E-IOT01A1/b_l475e_iot01a1_bus.h \
+ ../Core/Inc/b_l475e_iot01a1_conf.h \
+ ../Drivers/BSP/B-L475E-IOT01A1/b_l475e_iot01a1_errno.h \
  ../Drivers/BSP/B-L475E-IOT01/stm32l475e_iot01_accelero.h \
  ../Drivers/BSP/B-L475E-IOT01/stm32l475e_iot01.h \
  ../Drivers/BSP/B-L475E-IOT01/../Components/lsm6dsl/lsm6dsl.h \
  ../Drivers/BSP/B-L475E-IOT01/../Components/lsm6dsl/../Common/accelero.h \
- ../Drivers/BSP/B-L475E-IOT01/../Components/lsm6dsl/../Common/gyro.h
+ ../Drivers/BSP/B-L475E-IOT01/../Components/lsm6dsl/../Common/gyro.h \
+ ../BlueNRG_MS/App/app_bluenrg_ms.h
 ../Core/Inc/main.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal.h:
 ../Core/Inc/stm32l4xx_hal_conf.h:
@@ -85,8 +90,13 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_tim_ex.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart_ex.h:
+../BlueNRG_MS/Target/hci_tl_interface.h:
+../Drivers/BSP/B-L475E-IOT01A1/b_l475e_iot01a1_bus.h:
+../Core/Inc/b_l475e_iot01a1_conf.h:
+../Drivers/BSP/B-L475E-IOT01A1/b_l475e_iot01a1_errno.h:
 ../Drivers/BSP/B-L475E-IOT01/stm32l475e_iot01_accelero.h:
 ../Drivers/BSP/B-L475E-IOT01/stm32l475e_iot01.h:
 ../Drivers/BSP/B-L475E-IOT01/../Components/lsm6dsl/lsm6dsl.h:
 ../Drivers/BSP/B-L475E-IOT01/../Components/lsm6dsl/../Common/accelero.h:
 ../Drivers/BSP/B-L475E-IOT01/../Components/lsm6dsl/../Common/gyro.h:
+../BlueNRG_MS/App/app_bluenrg_ms.h:
