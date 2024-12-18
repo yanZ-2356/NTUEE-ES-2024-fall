@@ -176,11 +176,17 @@ void Write_Request_CB(uint16_t handle, uint8_t data_length, uint8_t *data)
 	{
 		PRINTF("Minimum light level changed to %d.\r\n", light);
 		MIN_LIGHT = light;
+		if(MIN_LIGHT > 7999){
+			MIN_LIGHT = 7999;
+		}
 	}
 	else if (handle == TargetLightHandle + 1)
 	{
 		PRINTF("Target light level changed to %d. \r\n", light);
 		TARGET_LIGHT = light;
+		if(TARGET_LIGHT > 4095){
+			TARGET_LIGHT = 4095;
+		}
 	}
 	aci_gatt_write_response(connection_handle, handle, 0x00, 0, data_length, data);
 }
